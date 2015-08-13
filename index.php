@@ -46,17 +46,34 @@ class QAS {
 
         $search = $this->formatSearchQuery($searchTerm);
 
+        var_dump($search);
+
         $result =  $this->client->DoSearch([
             'Engine' =>   [
                 '_' => $engine,
-                'Flatten' =>true,
+                'Flatten' =>false,
                 'Intensity' => "Exact",
-              //  'Threshold' => '5',
-              //  'Timeout'=>'',
-               // 'Intensity'=>''
+                //  'Threshold' => '5',
+                //  'Timeout'=>'',
             ],
             'Country'=> 'GBR',
             'Search' => $search
+        ]);
+
+        if($this->strip) {
+            $result = $result->QAPicklist->PicklistEntry;
+            if(is_object($result)) {
+                return $result->Picklist;
+            }
+        }
+
+        return $this->format($result);
+    }
+
+    public function refine ($moniker, $refinement) {
+        $result = $this->client->DoRefine([
+            'Moniker'=>$moniker,
+            'Refinement'=>$refinement
         ]);
 
         if($this->strip) {
@@ -99,13 +116,13 @@ class QAS {
             case 'json':
                 header('Content-Type: application/json');
                 return $this->convertToJson($data);
-            break;
+                break;
 
             default:
             case 'html':
                 header('Content-Type: text/html');
                 return $this->convertToHtml($data);
-            break;
+                break;
         }
     }
 
@@ -132,13 +149,14 @@ class QAS {
             $data = $data->QAPicklist->PicklistEntry;
             if(is_object($data)) {
 
-                return $data->Picklist;
+                return $data->Picklist." -- ". $data->Moniker;
             }
         }
 
-        foreach($data as $row){
+        foreach($data as $row) {
             $html .= "<div class='address_row'>";
             $lines = explode(",", $row->PartialAddress);
+            var_dump($row);
             $length = count($lines);
 
             $html .= "<a href='//". $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."?Moniker=".$row->Moniker."'>";
@@ -171,9 +189,15 @@ $qas = new QAS();
 if(!empty($_POST)){
     if(!empty($_POST['type'])) {
         $qas->returnType = $_POST['type'];
+        unset ($_POST['type']);
     }
     $qas->strip = false;
-    echo $qas->search($_POST);
+
+    /// do search ->do refinement (if !FullAddress -> get Picklist -> do refinement)
+
+    echo $qas->refine("0aIGBRDAzeBwEAAgAAAAEurLs4h7AAAAAAAAAA", "");
+
+    //echo $qas->search($_POST);
 }else if(!empty($_GET['Moniker'])) {
     echo $qas->getAddressDetails($_GET['Moniker']);
 }
