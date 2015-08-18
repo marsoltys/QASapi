@@ -6,8 +6,12 @@
  * Time: 14:09
  */
 
-//// !!!!!!!   Allow crosdomain requests !!!!!!! ////
+////  Allow crosdomain requests  ////
 header("Access-Control-Allow-Origin: *");
+
+/// Sanitize $_POST
+$_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
 
 /**
  * Class QAS
@@ -17,7 +21,7 @@ class QAS {
     /**
      * @var SoapClient PHP SoapClient class
      */
-    private $client;
+    public $client;
 
     /**
      * @var string response type - options: json | html | plain
@@ -45,42 +49,44 @@ class QAS {
     public function search($searchTerm, $engine = 'Singleline') {
 
         $search = $this->formatSearchQuery($searchTerm);
+        $result = "";
 
-        var_dump($search);
+        try {
+            $result = $this->client->DoSearch([
+                'Engine' => [
+                    '_' => $engine,
+                    'Flatten' => true,
+                    'Intensity' => "Exact",
+                    //  'Threshold' => '5',
+                    //  'Timeout'=>'',
+                ],
+                'Country' => 'GBR',
+                'Search' => $search
+            ]);
 
-        $result =  $this->client->DoSearch([
-            'Engine' =>   [
-                '_' => $engine,
-                'Flatten' =>false,
-                'Intensity' => "Exact",
-                //  'Threshold' => '5',
-                //  'Timeout'=>'',
-            ],
-            'Country'=> 'GBR',
-            'Search' => $search
-        ]);
-
-        if($this->strip) {
-            $result = $result->QAPicklist->PicklistEntry;
-            if(is_object($result)) {
-                return $result->Picklist;
+            if(is_object($result->QAPicklist->PicklistEntry) && $result->QAPicklist->PicklistEntry->CanStep){
+                return $this->refine($result->QAPicklist->PicklistEntry->Moniker);
             }
+
+        }catch (SoapFault $fault){
+            $this->soapError($fault);
         }
+
 
         return $this->format($result);
     }
 
-    public function refine ($moniker, $refinement) {
-        $result = $this->client->DoRefine([
-            'Moniker'=>$moniker,
-            'Refinement'=>$refinement
-        ]);
+    public function refine ($moniker, $refinement="") {
 
-        if($this->strip) {
-            $result = $result->QAPicklist->PicklistEntry;
-            if(is_object($result)) {
-                return $result->Picklist;
-            }
+        $result = "";
+
+        try {
+            $result = $this->client->DoRefine([
+                'Moniker'=>$moniker,
+                'Refinement'=>$refinement
+            ]);
+        }catch (SoapFault $fault){
+            $this->soapError($fault);
         }
 
         return $this->format($result);
@@ -105,6 +111,13 @@ class QAS {
      * @return mixed|string
      */
     private function format($data){
+
+        if($this->strip) {
+            $data = $data->QAPicklist->PicklistEntry;
+            if (is_object($data)) {
+                $data = $data->Picklist;
+            }
+        }
 
         switch (strtolower($this->returnType)) {
 
@@ -142,24 +155,26 @@ class QAS {
      * @return string html formatted data string
      */
     private function convertToHtml($data){
-
-        $html = "";
+        $html = "Results: <br>";
 
         if(!$this->strip){
             $data = $data->QAPicklist->PicklistEntry;
             if(is_object($data)) {
 
-                return $data->Picklist." -- ". $data->Moniker;
+                return $data->Picklist;
             }
         }
 
+
         foreach($data as $row) {
+
             $html .= "<div class='address_row'>";
-            $lines = explode(",", $row->PartialAddress);
-            var_dump($row);
+            $lines = explode(",", $row->Picklist);
             $length = count($lines);
 
-            $html .= "<a href='//". $_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']."?Moniker=".$row->Moniker."'>";
+            $class = $row->CanStep?'refineQAS':'';
+
+            $html .= "<span class='{$class}' id='".$row->Moniker."'>";
 
             foreach($lines as $key => $line){
                 $html .= "<span class='line_$key'>";
@@ -167,7 +182,7 @@ class QAS {
                 $html .= $length == $key + 1 ? "" : ", ";
                 $html .= "</span>";
             }
-            $html .= "</a></div>";
+            $html .= "</span></div>";
         }
 
         return $html;
@@ -181,23 +196,33 @@ class QAS {
 
         return $query;
     }
-}
 
+    private function soapError($fault){
+        if($this->returnType == "html"){
+            $details = str_replace(" ", "&nbsp;", json_encode($fault->detail, JSON_PRETTY_PRINT));
+            $details = str_replace("\n", "<br>", $details);
+            echo "SOAP Fault: (faultcode: {$fault->faultcode}, faultstring: {$fault->faultstring}, <br /> Details:  {$details})";
+        }else{
+            echo json_encode($fault);
+        }
+        exit();
+    }
+}
 
 $qas = new QAS();
 
-if(!empty($_POST)){
+if(!empty($_POST['Moniker'])) {
+
+    $qas->returnType = $_POST['type'];
+    echo $qas->refine($_POST['Moniker']);
+}
+else if(!empty($_POST)){
     if(!empty($_POST['type'])) {
         $qas->returnType = $_POST['type'];
         unset ($_POST['type']);
     }
     $qas->strip = false;
 
-    /// do search ->do refinement (if !FullAddress -> get Picklist -> do refinement)
-
-    echo $qas->refine("0aIGBRDAzeBwEAAgAAAAEurLs4h7AAAAAAAAAA", "");
-
-    //echo $qas->search($_POST);
-}else if(!empty($_GET['Moniker'])) {
-    echo $qas->getAddressDetails($_GET['Moniker']);
+    echo $qas->search($_POST);
 }
+
