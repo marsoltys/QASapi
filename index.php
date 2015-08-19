@@ -34,6 +34,11 @@ class QAS {
     public $strip = true;
 
     /**
+     * @var mixed contains raw response from SOAP method call
+     */
+    public $rawResult;
+
+    /**
      * @param $wsdl string[optional] WSDL file url
      */
     function __construct($wsdl = "http://vsvr-app539.euser.eroot.eadidom.com:2026/proweb.wsdl") {
@@ -49,13 +54,12 @@ class QAS {
     public function search($searchTerm, $engine = 'Singleline') {
 
         $search = $this->formatSearchQuery($searchTerm);
-        $result = "";
 
         try {
-            $result = $this->client->DoSearch([
+            $this->rawResult = $this->client->DoSearch([
                 'Engine' => [
                     '_' => $engine,
-                    'Flatten' => true,
+                    'Flatten' => false,
                     'Intensity' => "Exact",
                     //  'Threshold' => '5',
                     //  'Timeout'=>'',
@@ -64,8 +68,8 @@ class QAS {
                 'Search' => $search
             ]);
 
-            if(is_object($result->QAPicklist->PicklistEntry) && $result->QAPicklist->PicklistEntry->CanStep){
-                return $this->refine($result->QAPicklist->PicklistEntry->Moniker);
+            if(is_object($this->rawResult->QAPicklist->PicklistEntry) && $this->rawResult->QAPicklist->PicklistEntry->CanStep){
+                return $this->refine($this->rawResult->QAPicklist->PicklistEntry->Moniker);
             }
 
         }catch (SoapFault $fault){
@@ -73,15 +77,13 @@ class QAS {
         }
 
 
-        return $this->format($result);
+        return $this->format($this->rawResult);
     }
 
     public function refine ($moniker, $refinement="") {
 
-        $result = "";
-
         try {
-            $result = $this->client->DoRefine([
+            $this->rawResult = $this->client->DoRefine([
                 'Moniker'=>$moniker,
                 'Refinement'=>$refinement
             ]);
@@ -89,7 +91,7 @@ class QAS {
             $this->soapError($fault);
         }
 
-        return $this->format($result);
+        return $this->format($this->rawResult);
     }
 
     /**
@@ -98,12 +100,12 @@ class QAS {
      * @return mixed|string
      */
     public function getAddressDetails($moniker, $layout = '< Default >') {
-        $result =   $this->client->DoGetAddress([
+        $this->rawResult =   $this->client->DoGetAddress([
             'Layout'=> $layout,
             'Moniker' => $moniker
         ]);
 
-        return $this->format($result);
+        return $this->format($this->rawResult);
     }
 
     /**
@@ -114,9 +116,9 @@ class QAS {
 
         if($this->strip) {
             $data = $data->QAPicklist->PicklistEntry;
-            if (is_object($data)) {
-                $data = $data->Picklist;
-            }
+//            if (is_object($data)) {
+//                $data = $data->Picklist;
+//            }
         }
 
         switch (strtolower($this->returnType)) {
@@ -155,21 +157,38 @@ class QAS {
      * @return string html formatted data string
      */
     private function convertToHtml($data){
-        $html = "Results: <br>";
+        $html = $this->rawResult->QAPicklist->Total." results: <br><br>";
+        //   var_dump($this->rawResult);
 
         if(!$this->strip){
             $data = $data->QAPicklist->PicklistEntry;
-            if(is_object($data)) {
-
-                return $data->Picklist;
-            }
         }
 
+        if(is_object($data)){
+            $data = array($data);
+        }
 
         foreach($data as $row) {
 
             $html .= "<div class='address_row'>";
-            $lines = explode(",", $row->Picklist);
+
+            if($row->Information) {
+                $address = $row->Picklist;
+            }else if($row->FullAddress) {
+                $address = $row->PartialAddress;
+            }else {
+
+                $l = strlen($row->PartialAddress);
+                while($l > 0 && substr($row->Picklist, $l * -1) != substr($row->PartialAddress, 0, $l))
+                    $l--;
+                $address = $row->Picklist . substr($row->PartialAddress, $l);
+//                if(strpos($row->PartialAddress,$row->Picklist)!== false){
+//                    $address = $row->PartialAddress;
+//                }else {
+//                    $address = $row->Picklist . ", " . $row->PartialAddress;
+//                }
+            }
+            $lines = explode(",", $address);
             $length = count($lines);
 
             $class = $row->CanStep?'refineQAS':'';
