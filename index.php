@@ -157,8 +157,13 @@ class QAS {
      * @return string html formatted data string
      */
     private function convertToHtml($data){
-        $html = $this->rawResult->QAPicklist->Total." results: <br><br>";
-        //   var_dump($this->rawResult);
+
+
+        $count = $this->rawResult->QAPicklist->Total;
+
+        $res = $count>1?"results":"result";
+
+        $html = $this->rawResult->QAPicklist->Total." {$res}: <br><br>";
 
         if(!$this->strip){
             $data = $data->QAPicklist->PicklistEntry;
