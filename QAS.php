@@ -8,8 +8,14 @@
  */
 class QAS
 {
+    /**
+     * @var string default WSDL file location
+     */
     public $wsdl = "http://vsvr-app539.euser.eroot.eadidom.com:2026/proweb.wsdl";
 
+    /**
+     * @var array Default QAS request configuration
+     */
     private $defaults = [
         'Engine' => [
             '_' => 'Singleline',
@@ -19,8 +25,9 @@ class QAS
             'Timeout'=>'30',
         ],
         'Country' => 'GBR',
-        'Search' => 'Suffolk',
-        'Refinement' => ''
+        'Layout' => '< Default >',
+        'Refinement' => '',
+        'Search' => 'Suffolk'
     ];
 
     /**
@@ -28,12 +35,20 @@ class QAS
      */
     public $client;
 
+    /**
+     * @param string $wsdl WSDL file location
+     */
     function __construct($wsdl = null) {
         if ( empty($wsdl) )
             $wsdl = $this->wsdl;
+
         $this->client = new SoapClient($wsdl);
     }
 
+    /**
+     * @param array|object $json JSON object containing QAS request configuration and action, see $defaults
+     * @return string JSON encoded object
+     */
     public function call ($json) {
 
         $action = $json['action'];
@@ -48,34 +63,59 @@ class QAS
 
         }catch (SoapFault $e){
 
-            return $e->getMessage();
+            return $e;
 
         }
     }
 
+    /**
+     * @param string $query Search phrase
+     * @return string JSON encoded object
+     */
     public function search ($query) {
-        return $this->call([
+        $results = $this->call([
             'action'=>'DoSearch',
             'params'=>[
                 'Search'=>$query
             ]]);
+
+        $results = json_decode($results);
+
+        if(is_object($results->QAPicklist->PicklistEntry) && $results->QAPicklist->PicklistEntry->CanStep){
+            return $this->refine($results->QAPicklist->PicklistEntry->Moniker);
+        }
+
+        return $results;
     }
 
+    /**
+     * @param string $moniker
+     * @param string $query Search refinement
+     * @return string JSON
+     */
+    public function refine ($moniker, $query='') {
+        $results = $this->call([
+            'action'=>'DoRefine',
+            'params'=>[
+                'Refinement' => $query,
+                'Moniker' => $moniker
+            ]]);
+        return $results;
+    }
+
+    /**
+     * @return string JSON encoded array containing Available QAS methods
+     */
     public function getMethods() {
         $functions = $this->client->__getFunctions();
         return $this->response( $functions );
     }
 
+    /**
+     * @param object $data Data object to JSON encode
+     * @return string
+     */
     private function response( $data ) {
         return json_encode($data);
     }
 }
-
-$qas = new QAS();
-
-print $qas->call([
-    'action'=>'DoSearch',
-    'params'=>[
-        'Search'=>'IP12LL'
-    ]
-]);

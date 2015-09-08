@@ -8,15 +8,23 @@
 
 ////  Allow crosdomain requests  ////
 header("Access-Control-Allow-Origin: *");
-
 /// Sanitize $_POST
-$_POST  = filter_input_array(INPUT_POST, FILTER_SANITIZE_STRING);
+
+$args = array();
+$flags =[FILTER_FLAG_STRIP_LOW, FILTER_FLAG_STRIP_HIGH];
+$filter = FILTER_SANITIZE_STRING;
+
+foreach ($_POST as $key=>$value) {
+    $args[$key] = array('filter'=>$filter, 'flags'=>$flags);
+};
+
+$_POST  = filter_input_array(INPUT_POST, $args);
 
 
 /**
  * Class QAS
  */
-class QAS {
+class QASs {
 
     /**
      * @var SoapClient PHP SoapClient class

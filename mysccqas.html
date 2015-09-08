@@ -1,0 +1,258 @@
+<script>
+    
+    var api_url = 'https://apis.suffolk.gov.uk/qas/';
+
+    function toHtml(data) {
+        var count = data.QAPicklist.Total;
+        var res = count>1?"results":"result";
+
+        var $html = data.QAPicklist.Total + " " + res + ": <br><br>";
+
+        data = data.QAPicklist.PicklistEntry;
+
+        for (var key in data){
+
+            var $row = data[key];
+
+            $html += "<div class='address_row'>";
+            
+            var $address, $class, $lines, $length;
+
+            if($row.Information) {
+                $address = $row.Picklist;
+            }else if($row.FullAddress) {
+                $address = $row.PartialAddress;
+            }else {
+
+                $l = strlen($row.PartialAddress);
+                while($l > 0 && $row.Picklist.substr($l * -1) != $row.PartialAddress.substr(0, $l))
+                $l--;
+                $address = $row.Picklist + $row.PartialAddress.substr($l);
+            }
+            $lines = $address.split(",");
+            $length = count($lines);
+
+            $class = $row.CanStep?'refineQAS':'';
+
+            $html += "<span class='{$class}' id='" + $row.Moniker + "'>";
+
+            for(var linekey in $lines){
+
+                var $line = $lines[linekey];
+
+                $html += "<span class='line_" + linekey + "'>";
+                $html += $line.trim();
+                $html += $length == linekey + 1 ? "" : ", ";
+                $html += "</span>";
+            }
+            $html += "</span></div>";
+        };
+
+        return $html;
+    }
+
+    var waitDialog = null;
+    var closeFlag = null;
+
+    $.support.cors = true;
+
+    $(document).ready(function(){
+
+        $('#search_qas').click(function (e) {
+            e.preventDefault();
+            RequestStarted();
+            $.ajax({
+                method: "POST",
+                url: api_url,
+                crossDomain: true,
+                data: $(".qasForm :input").serialize()+'&'+$.param({ 'type': 'html' })
+            })
+                    .done(function( msg ) {
+                        $("#qas").html(msg);
+                        RequestEnded();
+                    });
+
+            return false;
+        });
+
+        $('body').on('click', '.refineQAS', function (e) {
+            e.preventDefault();
+            RequestStarted();
+            $.ajax({
+                method: "POST",
+                url: api_url,
+                crossDomain: true,
+                data: {
+                    Moniker: this.id,
+                    type: "html"
+                }
+            })
+                    .done(function( msg ) {
+                        $("#qas").html(msg);
+                        RequestEnded();
+                    });
+
+            return false;
+        });
+
+        $('#clear_qas').click(function(e){
+            e.preventDefault();
+            $('.qasForm input').val('');
+        })
+    })
+
+
+</script>
+
+<style>
+
+    .qasForm {
+        margin:0 auto;
+    }
+    .qasForm td {
+        vertical-align: top;
+    }
+    .qasForm td select {
+        margin:5px 0;
+    }
+
+    .address_row {
+        margin: 10px 5px;
+    }
+
+    .refineQAS {
+        color: darkblue;
+    }
+
+    .address_row .refineQAS:hover {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+</style>
+
+<table class="qasForm" action="javascript:;">
+    <tr>
+        <td>
+            <label for="flat">Flat:</label>
+            <br>
+            <input id="flat" type="text" name="flat"/>
+        </td>
+        <td>
+            <label for="house">House name / no:</label>
+            <br>
+            <input id="house" type="text" name="house"/>
+        </td>
+        <td>
+            <label for="street">Street</label>
+            <br>
+            <input id="street" type="text" name="street"/>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <label for="town">Town / City</label>
+            <br>
+            <input id="town" type="text" name="town"/>
+        </td>
+        <td>
+            <label for="postcode">Postcode</label>
+            <br>
+            <input id="postcode" type="text" name="postcode"/>
+        </td>
+        <td>
+            <label for="county">County</label>
+            <br>
+            <select name="county" id="county">
+                <option>Bedfordshire</option>
+                <option>Berkshire</option>
+                <option>Bristol</option>
+                <option>Buckinghamshire</option>
+                <option>Cambridgeshire</option>
+                <option>Cheshire</option>
+                <option>City of London</option>
+                <option>Cornwall</option>
+                <option>Cumbria</option>
+                <option>Derbyshire</option>
+                <option>Devon</option>
+                <option>Dorset</option>
+                <option>Durham</option>
+                <option>East Riding of Yorkshire</option>
+                <option>East Sussex</option>
+                <option>Essex</option>
+                <option>Gloucestershire</option>
+                <option>Greater London</option>
+                <option>Greater Manchester</option>
+                <option>Hampshire</option>
+                <option>Herefordshire</option>
+                <option>Hertfordshire</option>
+                <option>Isle of Wight</option>
+                <option>Kent</option>
+                <option>Lancashire</option>
+                <option>Leicestershire</option>
+                <option>Lincolnshire</option>
+                <option>Merseyside</option>
+                <option>Norfolk</option>
+                <option>North Yorkshire</option>
+                <option>Northamptonshire</option>
+                <option>Northumberland</option>
+                <option>Nottinghamshire</option>
+                <option>Oxfordshire</option>
+                <option>Rutland</option>
+                <option>Shropshire</option>
+                <option>Somerset</option>
+                <option>South Yorkshire</option>
+                <option>Staffordshire</option>
+                <option selected="selected">Suffolk</option>
+                <option>Surrey</option>
+                <option>Tyne and Wear</option>
+                <option>Warwickshire</option>
+                <option>West Midlands</option>
+                <option>West Sussex</option>
+                <option>West Yorkshire</option>
+                <option>Wiltshire</option>
+                <option>Worcestershire</option>
+            </select>
+        </td>
+    </tr>
+    <tr>
+        <td style="text-align: center" ><br><button id="search_qas" >Search</button></td>
+        <td></td>
+        <td><br><button id="clear_qas" >Clear</button></td>
+    </tr>
+</table>
+
+<br><br>
+<div id="qas">
+</div>
+
+<script>
+    function RequestEnded() {
+        try {
+            closeFlag = true;
+            if(waitDialog !== null){
+                waitDialog.close();
+                waitDialog = null;
+            }
+        } catch (ex) {console.log(ex.message); }
+    };
+
+
+    function RequestStarted() {
+        closeFlag = false;
+        SP.SOD.executeFunc('sp.js', 'SP.ClientContext', ShowWaitDialog);
+        setTimeout( function(){
+            if(waitDialog !== null){
+                waitDialog.close();
+                waitDialog = null;
+            }
+        }, 5000 );
+    };
+
+    function ShowWaitDialog() {
+        try {
+            if (waitDialog == null && !closeFlag) {
+                waitDialog = SP.UI.ModalDialog.showWaitScreenWithNoClose(SP.Res.dialogLoading15);
+            }
+        } catch (ex) { }
+    };
+</script>
