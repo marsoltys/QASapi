@@ -11,7 +11,7 @@ class QAS
     /**
      * @var string default WSDL file location
      */
-    public $wsdl = "http://vsvr-app539.euser.eroot.eadidom.com:2026/proweb.wsdl";
+    public $wsdl = "http://vsvr-dev897.euser.eroot.eadidom.com:2026/proweb.wsdl";
 
     /**
      * @var array Default QAS request configuration
@@ -20,15 +20,17 @@ class QAS
         'Engine' => [
             '_' => 'Singleline',
             'Flatten' => false,
-            'Intensity' => "Exact",
+            'Intensity' => "Close",
             'Threshold' => '5',
             'Timeout'=>'30',
         ],
-        'Country' => 'GBR',
-        'Layout' => '< Default >',
+        'Country' => 'APR',
+        'Layout' => 'PAFWEB',
         'Refinement' => '',
         'Search' => 'Suffolk'
     ];
+
+    private $response = null;
 
     /**
      * @var SoapClient
@@ -47,7 +49,7 @@ class QAS
 
     /**
      * @param array|object $json JSON object containing QAS request configuration and action, see $defaults
-     * @return string JSON encoded object
+     * @return Object|SoapFault response from QAS server
      */
     public function call ($json) {
 
@@ -56,21 +58,20 @@ class QAS
         if(empty($action))
             return "No 'action' parameter specified";
         try {
-            $params = array_merge( $this->defaults, $json['params'] );
-            $data = $this->client->$action( $params );
+            $params = array_merge((array)$this->defaults, (array)$json['params'] );
+            $this->response = $this->client->$action( $params );
 
-            return $this->response( $data );
+            return $this->response ;
 
         }catch (SoapFault $e){
 
             return $e;
-
         }
     }
 
     /**
      * @param string $query Search phrase
-     * @return string JSON encoded object
+     * @return Object|SoapFault response from QAS server
      */
     public function search ($query) {
         $results = $this->call([
@@ -78,8 +79,6 @@ class QAS
             'params'=>[
                 'Search'=>$query
             ]]);
-
-        $results = json_decode($results);
 
         if(is_object($results->QAPicklist->PicklistEntry) && $results->QAPicklist->PicklistEntry->CanStep){
             return $this->refine($results->QAPicklist->PicklistEntry->Moniker);
@@ -91,7 +90,7 @@ class QAS
     /**
      * @param string $moniker
      * @param string $query Search refinement
-     * @return string JSON
+     * @return Object|SoapFault response from QAS server
      */
     public function refine ($moniker, $query='') {
         $results = $this->call([
@@ -100,6 +99,18 @@ class QAS
                 'Refinement' => $query,
                 'Moniker' => $moniker
             ]]);
+
+        return $results;
+    }
+
+    public function getAddressDetails($moniker, $options=array()) {
+        $params = ['Moniker' => $moniker];
+        $options = array_merge($options, $params);
+        $results = $this->call([
+            'action'=>'DoGetAddress',
+            'params'=>$options
+        ]);
+
         return $results;
     }
 
@@ -108,14 +119,17 @@ class QAS
      */
     public function getMethods() {
         $functions = $this->client->__getFunctions();
-        return $this->response( $functions );
+        return $functions ;
     }
 
     /**
      * @param object $data Data object to JSON encode
      * @return string
      */
-    private function response( $data ) {
-        return json_encode($data);
+    public function getJson() {
+        if(!empty($this->response))
+            return json_encode($this->response);
+        else
+            return "{'Please make a request first'}";
     }
 }

@@ -1,8 +1,10 @@
+<script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <script>
     
-    var api_url = 'https://apis.suffolk.gov.uk/qas/';
+    var api_url = 'http://localhost:8080/';
 
     function toHtml(data) {
+       // console.log(data.QAPicklist);
         var count = data.QAPicklist.Total;
         var res = count>1?"results":"result";
 
@@ -24,17 +26,17 @@
                 $address = $row.PartialAddress;
             }else {
 
-                $l = strlen($row.PartialAddress);
+                $l = $row.PartialAddress.length;
                 while($l > 0 && $row.Picklist.substr($l * -1) != $row.PartialAddress.substr(0, $l))
                 $l--;
                 $address = $row.Picklist + $row.PartialAddress.substr($l);
             }
             $lines = $address.split(",");
-            $length = count($lines);
+            $length = $lines.length;
 
-            $class = $row.CanStep?'refineQAS':'';
+            $class = $row.CanStep?'refineQAS':'getDetails';
 
-            $html += "<span class='{$class}' id='" + $row.Moniker + "'>";
+            $html += "<span class='" + $class + "' id='" + $row.Moniker + "'>";
 
             for(var linekey in $lines){
 
@@ -51,6 +53,20 @@
         return $html;
     }
 
+    function formatFullAddress(address) {
+
+        $data="Full postal address:<br><br><div style='margin-left:20px;'>";
+        var $array = address.QAAddress.AddressLine;
+        $array.pop();
+        console.log($array);
+        for(var lineKey in $array){
+            var $line = $array[lineKey];
+            if($line.Line.length > 0)
+            $data += "&nbsp;&nbsp;&nbsp;&nbsp;" + $line.Line + "<br>";
+        }
+        return $data + "</div>";
+    }
+
     var waitDialog = null;
     var closeFlag = null;
 
@@ -65,10 +81,26 @@
                 method: "POST",
                 url: api_url,
                 crossDomain: true,
-                data: $(".qasForm :input").serialize()+'&'+$.param({ 'type': 'html' })
-            })
-                    .done(function( msg ) {
-                        $("#qas").html(msg);
+                dataType: "JSON",
+                data: {
+                    action: 'DoSearch',
+                    params : {
+                        'Engine': {
+                            '_': 'Singleline',
+                            'Flatten': false,
+                            'Intensity': "Close",
+                            'Threshold': '5',
+                            'Timeout': '30',
+                        },
+                        'Country': 'APR',
+                        'Layout': 'PAFWEB',
+                        'Refinement': '',
+                        'Search': 'ip12ll'
+                    }
+                }
+        })
+                    .done(function( data ) {
+                        $("#qas").html(toHtml(data));
                         RequestEnded();
                     });
 
@@ -76,28 +108,56 @@
         });
 
         $('body').on('click', '.refineQAS', function (e) {
-            e.preventDefault();
-            RequestStarted();
-            $.ajax({
-                method: "POST",
-                url: api_url,
-                crossDomain: true,
-                data: {
-                    Moniker: this.id,
-                    type: "html"
-                }
-            })
-                    .done(function( msg ) {
-                        $("#qas").html(msg);
-                        RequestEnded();
-                    });
+            if(this.id.length > 0){
+                e.preventDefault();
+                RequestStarted();
+                $.ajax({
+                    method: "POST",
+                    url: api_url,
+                    crossDomain: true,
+                    dataType: "JSON",
+                    data: {
+                        Moniker: this.id,
+                        type: "html"
+                    }
+                })
+                        .done(function( data ) {
+                            $("#qas").html(toHtml(data));
+                            RequestEnded();
+                        });
 
-            return false;
+                return false;
+            }
+        });
+
+        $('body').on('click', '.getDetails', function (e) {
+            if(this.id.length > 0){
+                e.preventDefault();
+                RequestStarted();
+                $.ajax({
+                    method: "POST",
+                    url: api_url,
+                    crossDomain: true,
+                    dataType: "JSON",
+                    data: {
+                        Moniker: this.id,
+                        type: "html",
+                        getDetails: true
+                    }
+                })
+                        .done(function( data ) {
+                            $("#qas").html(formatFullAddress(data));
+                            RequestEnded();
+                        });
+
+                return false;
+            }
         });
 
         $('#clear_qas').click(function(e){
             e.preventDefault();
             $('.qasForm input').val('');
+            $('#qas').html("");
         })
     })
 
@@ -120,11 +180,15 @@
         margin: 10px 5px;
     }
 
-    .refineQAS {
+    .refineQAS:not([id=""]),
+    .getDetails:not([id=""])
+    {
         color: darkblue;
     }
 
-    .address_row .refineQAS:hover {
+    .address_row .refineQAS:not([id=""]):hover,
+    .address_row .getDetails:not([id=""]):hover
+    {
         text-decoration: underline;
         cursor: pointer;
     }
@@ -163,6 +227,7 @@
             <label for="county">County</label>
             <br>
             <select name="county" id="county">
+                <option value="">All</option>
                 <option>Bedfordshire</option>
                 <option>Berkshire</option>
                 <option>Bristol</option>
@@ -238,14 +303,14 @@
 
 
     function RequestStarted() {
-        closeFlag = false;
-        SP.SOD.executeFunc('sp.js', 'SP.ClientContext', ShowWaitDialog);
-        setTimeout( function(){
-            if(waitDialog !== null){
-                waitDialog.close();
-                waitDialog = null;
-            }
-        }, 5000 );
+//        closeFlag = false;
+//        SP.SOD.executeFunc('sp.js', 'SP.ClientContext', ShowWaitDialog);
+//        setTimeout( function(){
+//            if(waitDialog !== null){
+//                waitDialog.close();
+//                waitDialog = null;
+//            }
+//        }, 5000 );
     };
 
     function ShowWaitDialog() {
