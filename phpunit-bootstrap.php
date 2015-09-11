@@ -1,7 +1,7 @@
 <?php
 /**
  *
- * Project: Qas Soap Client
+ * Project: QAS API
  * Date: 01/09/2015
  * @author Mariusz Soltys.
  * @version 1.0.0

@@ -2,7 +2,7 @@
 
 /**
  *
- * Project: Qas Soap Client
+ * Project: QAS API
  * Date: 01/09/2015
  * @author Mariusz Soltys.
  * @version 1.0.0
@@ -12,6 +12,10 @@
 
 namespace Marsoltys\QASapi;
 
+/**
+ * Class QASException
+ * @package Marsoltys\QASapi
+ */
 class QASException extends \Exception
 {
     public function __construct($msg, $code = 0, \Exception $previous = null)

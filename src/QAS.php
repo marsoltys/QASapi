@@ -2,7 +2,7 @@
 
 /**
  *
- * Project: Qas Soap Client
+ * Project: QAS API
  * Date: 01/09/2015
  * @author Mariusz Soltys.
  * @version 1.0.0
@@ -13,6 +13,10 @@
 namespace Marsoltys\QASapi;
 use Marsoltys\QASapi\QASException;
 
+/**
+ * Class QAS
+ * @package Marsoltys\QASapi
+ */
 class QAS
 {
     /**
@@ -53,6 +57,9 @@ class QAS
         'Search' => 'Suffolk'
     ];
 
+    /**
+     * @var null
+     */
     private $response = null;
 
     /**
@@ -115,6 +122,8 @@ class QAS
     }
 
     /**
+     * Do search refinement
+     *
      * @param string $moniker
      * @param string $query Search refinement
      * @return Object|\SoapFault response from QAS server
@@ -130,6 +139,13 @@ class QAS
         return $results;
     }
 
+    /**
+     * Gets full address details based on "PicklistItem.Moniker" property
+     *
+     * @param string $moniker
+     * @param array $options
+     * @return Object|\SoapFault response from QAS server
+     */
     public function getAddressDetails($moniker, $options=array()) {
         $params = ['Moniker' => $moniker];
         $options = array_merge($options, $params);
@@ -150,7 +166,7 @@ class QAS
     }
 
     /**
-     * @return string
+     * @return string JSON encoded response from server
      * @throws QASException
      */
     public function getJson() {

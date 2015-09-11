@@ -2,7 +2,7 @@
 
 /**
  *
- * Project: Qas Soap Client
+ * Project: QAS API
  * Date: 01/09/2015
  * @author Mariusz Soltys.
  * @version 1.0.0
@@ -18,6 +18,10 @@ namespace Marsoltys\QASapi;
  */
 
 
+/**
+ * Class Utils
+ * @package Marsoltys\QASapi
+ */
 class Utils
 {
     /**
@@ -70,6 +74,12 @@ class Utils
         return filter_var_array($data, $args);
     }
 
+    /**
+     * @param array $data
+     * @param int $filter
+     * @param array|int $flags
+     * @return arguments array for filter_var_array() function.
+     */
     private function recursiveArgs($data, $filter, $flags) {
         $args = null;
             foreach ($data as $key => $value) {
