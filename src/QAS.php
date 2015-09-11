@@ -1,17 +1,40 @@
 <?php
 
 /**
- * Created by PhpStorm.
- * User: Mariusz Soltys
+ *
+ * Project: Qas Soap Client
  * Date: 01/09/2015
- * Time: 09:19
+ * @author Mariusz Soltys.
+ * @version 1.0.0
+ * @license http://opensource.org/licenses/MIT
+ *
  */
+
+namespace Marsoltys\QASapi;
+use Marsoltys\QASapi\QASException;
+
 class QAS
 {
     /**
      * @var string default WSDL file location
      */
-    public $wsdl = "http://vsvr-dev897.euser.eroot.eadidom.com:2026/proweb.wsdl";
+    private $wsdl = "";
+
+    /**
+     * @return string
+     */
+    public function getWsdl()
+    {
+        return $this->wsdl;
+    }
+
+    /**
+     * @param string $wsdl
+     */
+    public function setWsdl($wsdl)
+    {
+        $this->wsdl = $wsdl;
+    }
 
     /**
      * @var array Default QAS request configuration
@@ -33,37 +56,41 @@ class QAS
     private $response = null;
 
     /**
-     * @var SoapClient
+     * @var \SoapClient
      */
-    public $client;
+    private $client;
 
     /**
      * @param string $wsdl WSDL file location
+     * @throws QASException
      */
     function __construct($wsdl = null) {
         if ( empty($wsdl) )
-            $wsdl = $this->wsdl;
+            throw new QASException("WSDL file is not set !");
+        else
+            $this->setWsdl($wsdl);
 
-        $this->client = new SoapClient($wsdl);
+        $this->client = new \SoapClient($this->getWsdl());
     }
 
     /**
-     * @param array|object $json JSON object containing QAS request configuration and action, see $defaults
-     * @return Object|SoapFault response from QAS server
+     * @param array|object $config JSON object containing QAS request configuration and action, see $defaults
+     * @return Object|\SoapFault response from QAS server
+     * @throws QASException
      */
-    public function call ($json) {
+    public function call ($config) {
 
-        $action = $json['action'];
+        $action = $config['action'];
 
         if(empty($action))
             return "No 'action' parameter specified";
         try {
-            $params = array_merge((array)$this->defaults, (array)$json['params'] );
+            $params = array_merge((array)$this->defaults, (array)$config['params'] );
             $this->response = $this->client->$action( $params );
 
             return $this->response ;
 
-        }catch (SoapFault $e){
+        }catch (\SoapFault $e){
 
             return $e;
         }
@@ -71,7 +98,7 @@ class QAS
 
     /**
      * @param string $query Search phrase
-     * @return Object|SoapFault response from QAS server
+     * @return Object|\SoapFault response from QAS server
      */
     public function search ($query) {
         $results = $this->call([
@@ -90,7 +117,7 @@ class QAS
     /**
      * @param string $moniker
      * @param string $query Search refinement
-     * @return Object|SoapFault response from QAS server
+     * @return Object|\SoapFault response from QAS server
      */
     public function refine ($moniker, $query='') {
         $results = $this->call([
@@ -123,13 +150,13 @@ class QAS
     }
 
     /**
-     * @param object $data Data object to JSON encode
      * @return string
+     * @throws QASException
      */
     public function getJson() {
         if(!empty($this->response))
             return json_encode($this->response);
         else
-            return "{'Please make a request first'}";
+            throw new QASException("Please invoke one of the search methods first!");
     }
 }

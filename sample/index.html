@@ -1,7 +1,7 @@
 <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
 <script>
     
-    var api_url = 'http://localhost:8080/';
+    var api_url = 'Controller.php';
 
     function toHtml(data) {
        // console.log(data.QAPicklist);
@@ -20,8 +20,8 @@
             
             var $address, $class, $lines, $length;
 
-            if($row.Information) {
-                $address = $row.Picklist;
+            if(data.Information) {
+                $address = data.Picklist;
             }else if($row.FullAddress) {
                 $address = $row.PartialAddress;
             }else {
@@ -82,22 +82,7 @@
                 url: api_url,
                 crossDomain: true,
                 dataType: "JSON",
-                data: {
-                    action: 'DoSearch',
-                    params : {
-                        'Engine': {
-                            '_': 'Singleline',
-                            'Flatten': false,
-                            'Intensity': "Close",
-                            'Threshold': '5',
-                            'Timeout': '30',
-                        },
-                        'Country': 'APR',
-                        'Layout': 'PAFWEB',
-                        'Refinement': '',
-                        'Search': 'ip12ll'
-                    }
-                }
+                data: $(".qasForm :input").serialize()+'&'+$.param({ 'type': 'html' })
         })
                     .done(function( data ) {
                         $("#qas").html(toHtml(data));
