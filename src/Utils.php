@@ -16,12 +16,6 @@ namespace Marsoltys\QASapi;
  * Class Utils
  * @package Marsoltys\QASapi
  */
-
-
-/**
- * Class Utils
- * @package Marsoltys\QASapi
- */
 class Utils
 {
     /**
@@ -32,11 +26,12 @@ class Utils
      * @param $query array|string variable containing query array or string
      * @return string comma "," delimited query fields
      */
-    public function formatSearchQuery($query) {
-
-        if(is_array($query)) {
+    public function formatSearchQuery($query)
+    {
+        if (is_array($query)) {
             $query = array_map('trim',$query);
             $query = array_filter($query);
+
             return join(", ", $query);
         }
 
@@ -50,12 +45,13 @@ class Utils
      * @param bool|false $html if exception should be HTML formatted
      * @return string
      */
-    public function soapError(\SoapFault $fault, $html = false){
-        if($html === true){
+    public function soapError(\SoapFault $fault, $html = false)
+    {
+        if ($html === true) {
             $details = str_replace(" ", "&nbsp;", json_encode($fault->detail, JSON_PRETTY_PRINT));
             $details = str_replace("\n", "<br>", $details);
             return "SOAP Fault: (faultcode: {$fault->faultcode}, faultstring: {$fault->faultstring}, <br /> Details:  {$details})";
-        }else{
+        } else {
             return json_encode($fault);
         }
     }
@@ -80,7 +76,8 @@ class Utils
      * @param array|int $flags
      * @return arguments array for filter_var_array() function.
      */
-    private function recursiveArgs($data, $filter, $flags) {
+    private function recursiveArgs($data, $filter, $flags)
+    {
         $args = null;
             foreach ($data as $key => $value) {
                     $args[$key] = array('filter' => $filter, 'flags' => $flags);

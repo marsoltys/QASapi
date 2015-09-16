@@ -13,10 +13,11 @@
 
 class QASExceptionTest extends PHPUnit_Framework_TestCase
 {
-    function testException() {
-        try{
+    function testException()
+    {
+        try {
             new Marsoltys\QASapi\QAS();
-        }catch (Exception $e){
+        } catch (Exception $e) {
             $this->assertEquals('Marsoltys\QASapi\QASException', get_class($e));
         }
     }

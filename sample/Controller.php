@@ -41,33 +41,28 @@ $result = "";
  *
  */
 
-if(!empty($_POST['action'])) {
+if (!empty($_POST['action'])) {
     $result = $qas->call($_POST);
-}
-
-/// Lets step-in, refine results or get full adress details- invokes DoRefine action
-else if(!empty($_POST['Moniker'])) {
-
-    if(!empty($_POST['getDetails']))
+} elseif (!empty($_POST['Moniker'])) {
+    // Lets step-in, refine results or get full adress details- invokes DoRefine action
+    if (!empty($_POST['getDetails'])) {
         // get full address details
         $result = $qas->getAddressDetails($_POST['Moniker']);
-    else
+    } else {
         // step-in / refine results
         $result = $qas->refine($_POST['Moniker']);
-}
-
-/// Lets do initial request - invokes DoSearch action
-else if(!empty($_POST)){
+    }
+} elseif (!empty($_POST)) {
+    // Lets do initial request - invokes DoSearch action
     $test = $utils->sanitizeInputArray($_POST);
     $result = $qas->search($utils->formatSearchQuery($test));
 }
 
-/**
- * If SoapFault was returned from server
- */
-if(is_a($result, 'SoapFault'))
+if (is_a($result, 'SoapFault')) {
+    //If SoapFault was returned from server
     echo $utils->soapError($result, true);
-else
+} else {
     // If everything is ok, return JSON string
     echo $qas->getJson();
+}
 

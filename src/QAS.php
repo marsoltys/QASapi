@@ -11,7 +11,6 @@
  */
 
 namespace Marsoltys\QASapi;
-use Marsoltys\QASapi\QASException;
 
 /**
  * Class QAS
@@ -71,34 +70,37 @@ class QAS
      * @param string $wsdl WSDL file location
      * @throws QASException
      */
-    function __construct($wsdl = null) {
-        if ( empty($wsdl) )
-            throw new QASException("WSDL file is not set !");
-        else
-            $this->setWsdl($wsdl);
+    function __construct($wsdl = null)
+    {
+        if ( empty($wsdl) ) {
+            throw new \Marsoltys\QASapi\QASException ("WSDL file is not set !");
+        }
+
+        $this->setWsdl($wsdl);
 
         $this->client = new \SoapClient($this->getWsdl());
     }
 
     /**
-     * @param array|object $config JSON object containing QAS request configuration and action, see $defaults
-     * @return Object|\SoapFault response from QAS server
+     * @param array|\stdClass $config JSON object containing QAS request configuration and action, see $defaults
+     * @return \stdClass|\SoapFault response from QAS server
      * @throws QASException
      */
-    public function call ($config) {
-
+    public function call($config)
+    {
         $action = $config['action'];
 
-        if(empty($action))
-            return "No 'action' parameter specified";
+        if (empty($action)) {
+            throw new \Marsoltys\QASapi\QASException("No 'action' parameter specified");
+        }
+
         try {
             $params = array_merge((array)$this->defaults, (array)$config['params'] );
             $this->response = $this->client->$action( $params );
 
             return $this->response ;
 
-        }catch (\SoapFault $e){
-
+        } catch (\SoapFault $e) {
             return $e;
         }
     }
@@ -107,14 +109,15 @@ class QAS
      * @param string $query Search phrase
      * @return Object|\SoapFault response from QAS server
      */
-    public function search ($query) {
+    public function search($query)
+    {
         $results = $this->call([
             'action'=>'DoSearch',
             'params'=>[
                 'Search'=>$query
             ]]);
 
-        if(is_object($results->QAPicklist->PicklistEntry) && $results->QAPicklist->PicklistEntry->CanStep){
+        if (is_object($results->QAPicklist->PicklistEntry) && $results->QAPicklist->PicklistEntry->CanStep) {
             return $this->refine($results->QAPicklist->PicklistEntry->Moniker);
         }
 
@@ -128,7 +131,8 @@ class QAS
      * @param string $query Search refinement
      * @return Object|\SoapFault response from QAS server
      */
-    public function refine ($moniker, $query='') {
+    public function refine ($moniker, $query = '')
+    {
         $results = $this->call([
             'action'=>'DoRefine',
             'params'=>[
@@ -146,9 +150,11 @@ class QAS
      * @param array $options
      * @return Object|\SoapFault response from QAS server
      */
-    public function getAddressDetails($moniker, $options=array()) {
+    public function getAddressDetails($moniker, $options = array())
+    {
         $params = ['Moniker' => $moniker];
         $options = array_merge($options, $params);
+
         $results = $this->call([
             'action'=>'DoGetAddress',
             'params'=>$options
@@ -160,7 +166,8 @@ class QAS
     /**
      * @return string JSON encoded array containing Available QAS methods
      */
-    public function getMethods() {
+    public function getMethods()
+    {
         $functions = $this->client->__getFunctions();
         return $functions ;
     }
@@ -169,10 +176,12 @@ class QAS
      * @return string JSON encoded response from server
      * @throws QASException
      */
-    public function getJson() {
-        if(!empty($this->response))
-            return json_encode($this->response);
-        else
-            throw new QASException("Please invoke one of the search methods first!");
+    public function getJson()
+    {
+        if (empty($this->response)) {
+            throw new \Marsoltys\QASapi\QASException("Please invoke one of the search methods first!");
+        }
+
+        return json_encode($this->response);
     }
 }

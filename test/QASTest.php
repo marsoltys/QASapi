@@ -11,12 +11,13 @@
  */
 class QASTest extends PHPUnit_Framework_TestCase
 {
-    public function testQAS () {
-        // As we can't test QAS class without WWSDL file we need to test agains exception
+    public function testQAS ()
+    {
+        // As we can't test QAS class without WSDL file we need to test against exception
         //TODO Create something to be able to test SOAP calls (is it possible without actual server ?)
-        try{
+        try {
             new Marsoltys\QASapi\QAS();
-        }catch (Exception $e){
+        } catch (Exception $e) {
             $this->assertEquals('Marsoltys\QASapi\QASException', get_class($e));
         }
     }
