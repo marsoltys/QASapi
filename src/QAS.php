@@ -107,7 +107,7 @@ class QAS
 
     /**
      * @param string $query Search phrase
-     * @return Object|\SoapFault response from QAS server
+     * @return \stdClass|\SoapFault response from QAS server
      */
     public function search($query)
     {
@@ -129,7 +129,7 @@ class QAS
      *
      * @param string $moniker
      * @param string $query Search refinement
-     * @return Object|\SoapFault response from QAS server
+     * @return \stdClass|\SoapFault response from QAS server
      */
     public function refine ($moniker, $query = '')
     {
@@ -148,7 +148,7 @@ class QAS
      *
      * @param string $moniker
      * @param array $options
-     * @return Object|\SoapFault response from QAS server
+     * @return \stdClass|\SoapFault response from QAS server
      */
     public function getAddressDetails($moniker, $options = array())
     {
@@ -164,12 +164,12 @@ class QAS
     }
 
     /**
-     * @return string JSON encoded array containing Available QAS methods
+     * @return \stdClass JSON encoded array containing Available QAS methods
      */
     public function getMethods()
     {
         $functions = $this->client->__getFunctions();
-        return $functions ;
+        return $functions;
     }
 
     /**
