@@ -17,7 +17,7 @@ use Marsoltys\QASapi\Utils;
 /**
  * @var $wsdl string URL to QAS WSDL file, i.e. "http://somehost.com/proweb.wsdl"
  */
-$wsdl = "http://vsvr-dev897.euser.eroot.eadidom.com:2026/proweb.wsdl";
+$wsdl = "";
 
 $qas = new QAS($wsdl);
 $utils = new Utils();
