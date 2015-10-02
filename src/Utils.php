@@ -33,6 +33,8 @@ class Utils
             $query = array_filter($query);
 
             return join(", ", $query);
+        } else {
+            $query = urldecode($query);
         }
 
         return $query;

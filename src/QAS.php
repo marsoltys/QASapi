@@ -173,6 +173,17 @@ class QAS
     }
 
     /**
+     * Can be used to validate method names before doing eval()
+     *
+     * @return array Array containing allowed method names
+     */
+    public function getAllowedMethods()
+    {
+        $methods = ['call', 'search', 'refine', 'getAddress', 'getMethods'];
+        return $methods;
+    }
+
+    /**
      * @return string JSON encoded response from server
      * @throws QASException
      */
