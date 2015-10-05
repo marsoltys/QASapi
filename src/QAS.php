@@ -166,7 +166,7 @@ class QAS
     /**
      * @return \stdClass JSON encoded array containing Available QAS methods
      */
-    public function getMethods()
+    public function getSoapActions()
     {
         $functions = $this->client->__getFunctions();
         return $functions;
