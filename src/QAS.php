@@ -150,14 +150,16 @@ class QAS
      * @param array $options
      * @return \stdClass|\SoapFault response from QAS server
      */
-    public function getAddressDetails($moniker, $options = array())
+    public function getAddress($moniker, $options = array())
     {
         $params = ['Moniker' => $moniker];
-        $options = array_merge($options, $params);
+        if (is_array($options)) {
+            $params = array_merge($options, $params);
+        }
 
         $results = $this->call([
             'action'=>'DoGetAddress',
-            'params'=>$options
+            'params'=>$params
         ]);
 
         return $results;
